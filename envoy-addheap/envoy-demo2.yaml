@@ -1,0 +1,53 @@
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+      protocol: TCP
+      address: 0.0.0.0
+      port_value: 9901
+static_resources:
+  listeners:
+  - name: my_listener
+    address:
+      socket_address:
+        protocol: TCP
+        address: 127.0.0.1
+        port_value: 13333
+    connection_balance_config:
+      exact_balance: {}
+    tcp_backlog_size: 20480
+    filter_chains:
+    - filters:
+      # The HTTP connection manager is the only network filter.
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match:
+                  path: "/"
+                route:
+                  cluster: my_cluster
+          http_filters:
+          - name: envoy.filters.http.router
+  clusters:
+  - name: my_cluster
+    connect_timeout: 0.25s
+    type: strict_dns
+    lb_policy: round_robin
+    protocol_selection: USE_DOWNSTREAM_PROTOCOL
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: my_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 8080
