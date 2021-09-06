@@ -1,0 +1,1 @@
+envoy-static filter=lfs diff=lfs merge=lfs -text
